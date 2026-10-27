@@ -446,7 +446,8 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
 
   defp finish_prompt(state, turn_id, {:ok, result}) do
     type = if result["stopReason"] == "cancelled", do: :turn_interrupted, else: :turn_completed
-    emit(state, type, %{"stop_reason" => result["stopReason"]}, turn_id: turn_id)
+    payload = %{"stop_reason" => result["stopReason"], "usage" => result["usage"]}
+    emit(state, type, payload, turn_id: turn_id)
     deny_pending_approvals(state)
   end
 
