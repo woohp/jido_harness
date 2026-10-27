@@ -9,7 +9,12 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
 
   @startup_timeout 30_000
   @handler_flush_timeout 1_000
-  @max_pending_update_markers 32
+  # Loading a session replays its whole history in one burst, and Arbor ACP drops updates
+  # (and their markers) past its queue limits. An update whose marker is gone takes the
+  # active turn when it is finally emitted, so a late replayed update would land in the
+  # next prompt's turn. Keep every marker, bounded by bytes rather than count.
+  @max_pending_update_markers 100_000
+  @max_update_queue_bytes 64 * 1024 * 1024
   @protocol_timeout_margin 5_000
   @maximum_protocol_timeout 4_294_967_295
   @steer_timeout 10_000
@@ -323,6 +328,8 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
         "terminal" => false
       },
       event_listener: self(),
+      max_update_queue: @max_pending_update_markers,
+      max_update_queue_bytes: @max_update_queue_bytes,
       protocol_version: 1,
       max_frame_bytes: ArborACPTransport.max_frame_bytes(),
       initialize_timeout: @startup_timeout,

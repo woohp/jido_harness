@@ -294,6 +294,43 @@ defmodule Jido.Harness.ACPSessionTest do
     assert result.usage == %{"size" => 10, "used" => 3}
   end
 
+  test "replayed history emitted after the next prompt starts stays out of its turn" do
+    assert {:ok, session_id} =
+             Jido.Harness.Session.start(:kimi, %{provider_session_id: "saved-provider-session"})
+
+    assert {:ok, _info} = await_ready(session_id)
+    [{worker, _value}] = Registry.lookup(Jido.Harness.SessionRegistry, session_id)
+    transport = :sys.get_state(worker).handle
+    client = :sys.get_state(transport).client
+    assert :sys.get_state(client).max_update_queue > 32
+
+    # A loaded session's history arrives in a burst longer than the old queue limits; the
+    # handler emits the last of it only after the next prompt has started.
+    updates =
+      for i <- 1..40 do
+        %{"sessionUpdate" => "agent_message_chunk", "content" => %{"type" => "text", "text" => "replayed #{i}"}}
+      end
+
+    for update <- updates, do: send(transport, {:acp_session_update, "saved-provider-session", update})
+    :sys.replace_state(transport, &%{&1 | active_turn_id: "next-turn"})
+    for update <- updates, do: send(transport, {:acp_session_update, "saved-provider-session", update, %{}})
+    :sys.replace_state(transport, &%{&1 | active_turn_id: nil})
+
+    assert eventually(fn ->
+             {:ok, events} = Jido.Harness.Session.replay(session_id)
+             Enum.count(events, &match?(%{type: :output_text_delta, payload: %{"text" => "replayed " <> _}}, &1)) == 40
+           end)
+
+    {:ok, events} = Jido.Harness.Session.replay(session_id)
+
+    assert [nil] =
+             for(
+               %{type: :output_text_delta, payload: %{"text" => "replayed " <> _}} = event <- events,
+               uniq: true,
+               do: event.turn_id
+             )
+  end
+
   test "ACP translates permission requests and rejects stale responses" do
     assert {:ok, session_id} = Jido.Harness.Session.start(:kimi, %{})
     assert {:ok, _info} = await_ready(session_id)
