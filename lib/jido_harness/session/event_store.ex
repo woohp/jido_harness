@@ -27,9 +27,8 @@ defmodule Jido.Harness.Session.EventStore do
 
   @doc false
   @spec normalize_adapter_event(Event.t(), State.t()) :: Event.t()
-  def normalize_adapter_event(event, state) do
-    turn_id = event.turn_id || (state.active && state.active.id)
-    %{event | run_id: nil, session_id: nil, turn_id: turn_id}
+  def normalize_adapter_event(event, _state) do
+    %{event | run_id: nil, session_id: nil}
   end
 
   @doc false

@@ -174,6 +174,12 @@ for line in sys.stdin:
         send({"jsonrpc": "2.0", "id": request_id, "result": {"sessionId": session_id}})
     elif method == "session/load":
         session_id = message.get("params", {}).get("sessionId", session_id)
+        if session_id == "saved-with-history":
+            for index in range(100):
+                send({"jsonrpc": "2.0", "method": "session/update", "params": {
+                    "sessionId": session_id,
+                    "update": {"sessionUpdate": "agent_message_chunk", "content": {"type": "text", "text": f"history {index} "}},
+                }})
         send({"jsonrpc": "2.0", "id": request_id, "result": {"sessionId": session_id}})
     elif method == "session/prompt":
         text = " ".join(
