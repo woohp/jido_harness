@@ -97,6 +97,18 @@ defmodule Jido.Harness.ACPSessionTest do
              Jido.Harness.Session.await(session_id, turn_id, 2_000)
   end
 
+  test "a loaded session's replayed history stays out of the first turn" do
+    # The turn is queued before the session is ready, so it starts as soon as the load returns.
+    assert {:ok, session_id} = Jido.Harness.Session.start(:kimi, %{provider_session_id: "saved-with-history"})
+    assert {:ok, turn_id} = Jido.Harness.Session.send_message(session_id, "fixture")
+    assert {:ok, %{status: :completed, text: "fixture-ok"}} = Jido.Harness.Session.await(session_id, turn_id, 2_000)
+
+    {:ok, events} = Jido.Harness.Session.replay(session_id, limit: 1_000)
+    history = for %{type: :output_text_delta, payload: %{"text" => "history " <> _}} = event <- events, do: event
+    assert length(history) == 100
+    assert Enum.all?(history, &is_nil(&1.turn_id))
+  end
+
   test "ACP forks an existing provider session into a new one through Arbor ACP" do
     assert {:ok, session_id} =
              Jido.Harness.Session.start(:kimi, %{fork_session_id: "saved-provider-session"})
