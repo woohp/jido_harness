@@ -2,7 +2,7 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
   @moduledoc false
   use GenServer, restart: :temporary
 
-  alias Arbor.ACP.Client
+  alias Arbor.ACP.{Capabilities, Client}
   alias Jido.Harness.{ApprovalResponse, Error, Event, ID, TurnRequest}
   alias Jido.Harness.SessionAdapters.ACP.{ArborACPHandler, ArborACPTransport}
   alias Jido.Harness.SessionAdapters.ACP.ArborACPTransport.Bridge
@@ -437,11 +437,20 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
         Client.fork_session(client, request.fork_session_id, request.cwd, options)
 
       is_binary(request.provider_session_id) ->
-        Client.load_session(client, request.provider_session_id, request.cwd, options)
+        # `session/load` streams the whole saved history back before it
+        # returns; `session/resume` reopens the session without it.
+        if resumable?(client),
+          do: Client.resume_session(client, request.provider_session_id, request.cwd, options),
+          else: Client.load_session(client, request.provider_session_id, request.cwd, options)
 
       true ->
         Client.new_session(client, request.cwd, options)
     end
+  end
+
+  defp resumable?(client) do
+    {:ok, capabilities} = Client.agent_capabilities(client)
+    Capabilities.supported?(capabilities, :session_resume)
   end
 
   defp provider_session_id(result, request) do

@@ -33,6 +33,8 @@ def session_capabilities():
     capabilities = {"close": {}}
     if os.environ.get("HARNESS_FIXTURE_NO_FORK") != "1":
         capabilities["fork"] = {}
+    if os.environ.get("HARNESS_FIXTURE_NO_RESUME") != "1":
+        capabilities["resume"] = {}
     return capabilities
 
 
@@ -172,6 +174,9 @@ for line in sys.stdin:
     elif method == "session/fork":
         session_id = "fork-of-" + message.get("params", {}).get("sessionId", "")
         send({"jsonrpc": "2.0", "id": request_id, "result": {"sessionId": session_id}})
+    elif method == "session/resume":
+        session_id = message.get("params", {}).get("sessionId", session_id)
+        send({"jsonrpc": "2.0", "id": request_id, "result": {}})
     elif method == "session/load":
         session_id = message.get("params", {}).get("sessionId", session_id)
         if session_id == "saved-with-history":

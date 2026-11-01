@@ -86,20 +86,27 @@ defmodule Jido.Harness.ACPSessionTest do
     assert {:ok, _info} = Jido.Harness.Session.info(fast)
   end
 
-  test "ACP loads an existing provider session through Arbor ACP" do
-    assert {:ok, session_id} =
-             Jido.Harness.Session.start(:kimi, %{provider_session_id: "saved-provider-session"})
-
-    assert {:ok, %{provider_session_id: "saved-provider-session"}} = await_ready(session_id)
-    assert {:ok, turn_id} = Jido.Harness.Session.send_message(session_id, "loaded")
+  test "ACP resumes an existing provider session without replaying its history" do
+    assert {:ok, session_id} = Jido.Harness.Session.start(:kimi, %{provider_session_id: "saved-with-history"})
+    assert {:ok, %{provider_session_id: "saved-with-history"}} = await_ready(session_id)
+    assert {:ok, turn_id} = Jido.Harness.Session.send_message(session_id, "resumed")
 
     assert {:ok, %{status: :completed, text: "fixture-ok"}} =
              Jido.Harness.Session.await(session_id, turn_id, 2_000)
+
+    {:ok, events} = Jido.Harness.Session.replay(session_id, limit: 1_000)
+    refute Enum.any?(events, &match?(%{type: :output_text_delta, payload: %{"text" => "history " <> _}}, &1))
   end
 
   test "a loaded session's replayed history stays out of the first turn" do
-    # The turn is queued before the session is ready, so it starts as soon as the load returns.
-    assert {:ok, session_id} = Jido.Harness.Session.start(:kimi, %{provider_session_id: "saved-with-history"})
+    # An agent that cannot resume loads instead. The turn is queued before the
+    # session is ready, so it starts as soon as the load returns.
+    assert {:ok, session_id} =
+             Jido.Harness.Session.start(:kimi, %{
+               provider_session_id: "saved-with-history",
+               env: %{"HARNESS_FIXTURE_NO_RESUME" => "1"}
+             })
+
     assert {:ok, turn_id} = Jido.Harness.Session.send_message(session_id, "fixture")
     assert {:ok, %{status: :completed, text: "fixture-ok"}} = Jido.Harness.Session.await(session_id, turn_id, 2_000)
 
