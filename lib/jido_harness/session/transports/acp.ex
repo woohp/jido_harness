@@ -451,7 +451,7 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
   # `_meta` for the session's new/load/resume/fork request, when the adapter supplies any.
   defp session_meta(adapter, request) do
     case function_exported?(adapter, :acp_session_meta, 1) && adapter.acp_session_meta(request) do
-      meta when is_map(meta) and map_size(meta) > 0 -> [meta: meta]
+      %{} = meta -> [meta: meta]
       _none -> []
     end
   end
