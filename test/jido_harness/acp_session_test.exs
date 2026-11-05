@@ -127,6 +127,17 @@ defmodule Jido.Harness.ACPSessionTest do
              Jido.Harness.Session.await(session_id, turn_id, 2_000)
   end
 
+  test "a Claude fork keeps history only up to the message it resumes at" do
+    assert {:ok, session_id} =
+             Jido.Harness.Session.start(:claude, %{
+               fork_session_id: "saved-provider-session",
+               provider_options: %{resume_session_at: "message-uuid"}
+             })
+
+    assert {:ok, %{provider_session_id: "fork-of-saved-provider-session-at-message-uuid"}} =
+             await_ready(session_id)
+  end
+
   test "a fork fails to open when the ACP agent does not advertise forking" do
     assert {:ok, session_id} =
              Jido.Harness.Session.start(:kimi, %{

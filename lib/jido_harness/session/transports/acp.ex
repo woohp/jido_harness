@@ -375,7 +375,7 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
   defp initialize_session(client, request, state) do
     with :ok <- validate_provider_capabilities(client, request, state.context.adapter),
          :ok <- authenticate(client, state.context.acp_agent),
-         {:ok, result} <- open_session(client, request),
+         {:ok, result} <- open_session(client, request, state.context.adapter),
          {:ok, provider_session_id} <- provider_session_id(result, request),
          :ok <- record_session_configuration(state, provider_session_id, result),
          :ok <- apply_initial_configuration(client, provider_session_id, request, state.context) do
@@ -427,8 +427,8 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
     :ok
   end
 
-  defp open_session(client, request) do
-    options = [mcp_servers: mcp_servers(request.mcp_config)]
+  defp open_session(client, request, adapter) do
+    options = [mcp_servers: mcp_servers(request.mcp_config)] ++ session_meta(adapter, request)
 
     cond do
       is_binary(request.fork_session_id) ->
@@ -445,6 +445,14 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
 
       true ->
         Client.new_session(client, request.cwd, options)
+    end
+  end
+
+  # `_meta` for the session's new/load/resume/fork request, when the adapter supplies any.
+  defp session_meta(adapter, request) do
+    case function_exported?(adapter, :acp_session_meta, 1) && adapter.acp_session_meta(request) do
+      meta when is_map(meta) and map_size(meta) > 0 -> [meta: meta]
+      _none -> []
     end
   end
 

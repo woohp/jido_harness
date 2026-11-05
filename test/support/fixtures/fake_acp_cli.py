@@ -172,7 +172,11 @@ for line in sys.stdin:
                 }]
             send({"jsonrpc": "2.0", "id": request_id, "result": result})
     elif method == "session/fork":
-        session_id = "fork-of-" + message.get("params", {}).get("sessionId", "")
+        params = message.get("params", {})
+        session_id = "fork-of-" + params.get("sessionId", "")
+        resume_at = params.get("_meta", {}).get("claudeCode", {}).get("options", {}).get("resumeSessionAt")
+        if resume_at:
+            session_id += "-at-" + resume_at
         send({"jsonrpc": "2.0", "id": request_id, "result": {"sessionId": session_id}})
     elif method == "session/resume":
         session_id = message.get("params", {}).get("sessionId", session_id)

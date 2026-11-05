@@ -1,5 +1,10 @@
 defmodule Jido.Harness.Adapters.Claude do
-  @moduledoc "Claude Code provider profile using claude-agent-acp."
+  @moduledoc """
+  Claude Code provider profile using claude-agent-acp.
+
+  The `resume_session_at` provider option names a message UUID in the session being
+  forked or resumed: Claude Code keeps history only up to and including that entry.
+  """
   @behaviour Jido.Harness.Adapter
 
   alias Jido.Harness.{AdapterSpec, Adapters.Helpers, Capabilities}
@@ -27,10 +32,12 @@ defmodule Jido.Harness.Adapters.Claude do
           %{
             capabilities: %{load_session: true, multimodal: true, dynamic_model: true, usage: true},
             turn_options: [:attachments, :content],
-            configuration_options: [:model]
+            configuration_options: [:model],
+            session_provider_options: :adapter
           }
         ),
       normalized_options: [:model, :provider_session_id, :mcp_config, :attachments],
+      provider_options: [:resume_session_at],
       install: %{npm: "@anthropic-ai/claude-code"}
     }
   end
@@ -45,6 +52,17 @@ defmodule Jido.Harness.Adapters.Claude do
         config,
         capabilities: spec().capabilities
       )
+
+  @impl true
+  def acp_session_meta(request) do
+    case Helpers.provider_options(request.provider_options, [:resume_session_at]) do
+      %{resume_session_at: uuid} when is_binary(uuid) ->
+        %{"claudeCode" => %{"options" => %{"resumeSessionAt" => uuid}}}
+
+      _options ->
+        nil
+    end
+  end
 
   @impl true
   def install(_config, options), do: Helpers.install_npm(:claude, "@anthropic-ai/claude-code", options)
