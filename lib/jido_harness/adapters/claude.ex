@@ -32,7 +32,7 @@ defmodule Jido.Harness.Adapters.Claude do
       acp_agent:
         Jido.Harness.ACPAgentSpec.adapter(
           "claude-agent-acp",
-          "@agentclientprotocol/claude-agent-acp@0.101.0",
+          "@agentclientprotocol/claude-agent-acp@0.106.0",
           %{
             capabilities: %{load_session: true, multimodal: true, dynamic_model: true, usage: true},
             turn_options: [:attachments, :content],

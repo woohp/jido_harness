@@ -89,7 +89,7 @@ guard when changing the package pin.
 | --- | --- |
 | Amp | `amp-acp@0.9.0` |
 | Antigravity CLI | `@simonepri/refined-antigravity-acp@1.6.3` |
-| Claude Code | `@agentclientprotocol/claude-agent-acp@0.101.0` |
+| Claude Code | `@agentclientprotocol/claude-agent-acp@0.106.0` |
 | Codex | `@agentclientprotocol/codex-acp@1.6.2` |
 | Pi | `pi-acp@0.0.33` |
 | Z.AI | `@agentclientprotocol/claude-agent-acp@0.70.0` |
