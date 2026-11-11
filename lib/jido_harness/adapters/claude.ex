@@ -2,8 +2,10 @@ defmodule Jido.Harness.Adapters.Claude do
   @moduledoc """
   Claude Code provider profile using claude-agent-acp.
 
-  The `resume_session_at` provider option names a message UUID in the session being
-  forked or resumed: Claude Code keeps history only up to and including that entry.
+  The `fork_message_id` provider option names an assistant message in the session being
+  forked, by its API message id: the fork keeps history only up to and including that
+  message. claude-agent-acp's `session/fork` copies the whole transcript under new entry
+  UUIDs, and takes a fork point only through its `_meta.jetbrains.air.fork` field.
 
   The client advertises ACP `session.compaction`, so Claude's context compactions arrive
   as `compaction_update` and `compaction_summary_chunk` updates (provider events) rather
@@ -41,7 +43,7 @@ defmodule Jido.Harness.Adapters.Claude do
           }
         ),
       normalized_options: [:model, :provider_session_id, :mcp_config, :attachments],
-      provider_options: [:resume_session_at],
+      provider_options: [:fork_message_id],
       install: %{npm: "@anthropic-ai/claude-code"}
     }
   end
@@ -64,9 +66,9 @@ defmodule Jido.Harness.Adapters.Claude do
 
   @impl true
   def acp_session_meta(request) do
-    case Helpers.provider_options(request.provider_options, [:resume_session_at]) do
-      %{resume_session_at: uuid} when is_binary(uuid) ->
-        %{"claudeCode" => %{"options" => %{"resumeSessionAt" => uuid}}}
+    case Helpers.provider_options(request.provider_options, [:fork_message_id]) do
+      %{fork_message_id: id} when is_binary(id) ->
+        %{"jetbrains" => %{"air" => %{"fork" => %{"version" => 1, "messageId" => id}}}}
 
       _options ->
         nil

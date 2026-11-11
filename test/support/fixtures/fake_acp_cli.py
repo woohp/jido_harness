@@ -178,9 +178,9 @@ for line in sys.stdin:
     elif method == "session/fork":
         params = message.get("params", {})
         session_id = "fork-of-" + params.get("sessionId", "")
-        resume_at = params.get("_meta", {}).get("claudeCode", {}).get("options", {}).get("resumeSessionAt")
-        if resume_at:
-            session_id += "-at-" + resume_at
+        fork_at = params.get("_meta", {}).get("jetbrains", {}).get("air", {}).get("fork", {}).get("messageId")
+        if fork_at:
+            session_id += "-at-" + fork_at
         send({"jsonrpc": "2.0", "id": request_id, "result": {"sessionId": session_id}})
     elif method == "session/resume":
         session_id = message.get("params", {}).get("sessionId", session_id)

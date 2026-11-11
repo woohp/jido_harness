@@ -152,14 +152,14 @@ defmodule Jido.Harness.ACPSessionTest do
              Jido.Harness.Session.await(session_id, turn_id, 2_000)
   end
 
-  test "a Claude fork keeps history only up to the message it resumes at" do
+  test "a Claude fork keeps history only up to the message it names" do
     assert {:ok, session_id} =
              Jido.Harness.Session.start(:claude, %{
                fork_session_id: "saved-provider-session",
-               provider_options: %{resume_session_at: "message-uuid"}
+               provider_options: %{fork_message_id: "msg_1"}
              })
 
-    assert {:ok, %{provider_session_id: "fork-of-saved-provider-session-at-message-uuid"}} =
+    assert {:ok, %{provider_session_id: "fork-of-saved-provider-session-at-msg_1"}} =
              await_ready(session_id)
   end
 
