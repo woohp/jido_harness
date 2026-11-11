@@ -70,6 +70,31 @@ defmodule Jido.Harness.ACPSessionTest do
     assert state in [:cancelled, :exited]
   end
 
+  test "a provider's client capabilities join the defaults at initialize" do
+    dir = Path.join(System.tmp_dir!(), "jido-harness-init-#{System.unique_integer([:positive])}")
+    File.mkdir_p!(dir)
+    on_exit(fn -> File.rm_rf!(dir) end)
+
+    for provider <- [:claude, :kimi] do
+      path = Path.join(dir, "#{provider}.json")
+
+      assert {:ok, session_id} =
+               Jido.Harness.Session.start(provider, %{env: %{"HARNESS_FIXTURE_INITIALIZE_LOG" => path}})
+
+      assert {:ok, _info} = await_ready(session_id)
+      assert :ok = Jido.Harness.Session.close(session_id)
+    end
+
+    claude = dir |> Path.join("claude.json") |> File.read!() |> Jason.decode!()
+    kimi = dir |> Path.join("kimi.json") |> File.read!() |> Jason.decode!()
+    assert %{"session" => %{"compaction" => %{}}, "terminal" => false} = claude["clientCapabilities"]
+
+    assert kimi["clientCapabilities"] == %{
+             "fs" => %{"readTextFile" => false, "writeTextFile" => false},
+             "terminal" => false
+           }
+  end
+
   test "a slow initialize handshake does not block another session" do
     assert {:ok, slow} = Jido.Harness.Session.start(:kimi, %{env: %{"HARNESS_FIXTURE_INITIALIZE_DELAY" => "1.5"}})
     assert {:ok, fast} = Jido.Harness.Session.start(:kimi, %{})

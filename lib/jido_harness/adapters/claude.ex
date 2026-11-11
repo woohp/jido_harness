@@ -4,6 +4,10 @@ defmodule Jido.Harness.Adapters.Claude do
 
   The `resume_session_at` provider option names a message UUID in the session being
   forked or resumed: Claude Code keeps history only up to and including that entry.
+
+  The client advertises ACP `session.compaction`, so Claude's context compactions arrive
+  as `compaction_update` and `compaction_summary_chunk` updates (provider events) rather
+  than as a synthetic tool call.
   """
   @behaviour Jido.Harness.Adapter
 
@@ -28,7 +32,7 @@ defmodule Jido.Harness.Adapters.Claude do
       acp_agent:
         Jido.Harness.ACPAgentSpec.adapter(
           "claude-agent-acp",
-          "@agentclientprotocol/claude-agent-acp@0.70.0",
+          "@agentclientprotocol/claude-agent-acp@0.101.0",
           %{
             capabilities: %{load_session: true, multimodal: true, dynamic_model: true, usage: true},
             turn_options: [:attachments, :content],
@@ -52,6 +56,11 @@ defmodule Jido.Harness.Adapters.Claude do
         config,
         capabilities: spec().capabilities
       )
+
+  @impl true
+  def acp_client_capabilities do
+    %{"session" => %{"compaction" => %{}}}
+  end
 
   @impl true
   def acp_session_meta(request) do

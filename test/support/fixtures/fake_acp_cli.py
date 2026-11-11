@@ -104,6 +104,10 @@ for line in sys.stdin:
     request_id = message.get("id")
 
     if method == "initialize":
+        initialize_log = os.environ.get("HARNESS_FIXTURE_INITIALIZE_LOG")
+        if initialize_log:
+            with open(initialize_log, "w") as record:
+                record.write(json.dumps(message["params"]))
         time.sleep(float(os.environ.get("HARNESS_FIXTURE_INITIALIZE_DELAY", "0")))
         auth_method = os.environ.get("HARNESS_FIXTURE_REQUIRE_AUTH_METHOD")
         auth_methods = []

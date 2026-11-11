@@ -21,11 +21,14 @@ defmodule Jido.Harness.Adapter do
   @callback acp_validate_request(SessionRequest.t()) :: :ok | {:error, term()}
   @callback acp_validate_capabilities(SessionRequest.t(), map()) :: :ok | {:error, term()}
   @callback acp_session_meta(SessionRequest.t()) :: map() | nil
+  @doc "Client capabilities the provider's agent may use, merged into the defaults."
+  @callback acp_client_capabilities() :: map()
 
   @optional_callbacks install: 2,
                       acp_env: 2,
                       acp_validate_request: 1,
                       acp_validate_capabilities: 2,
                       acp_configuration: 1,
-                      acp_session_meta: 1
+                      acp_session_meta: 1,
+                      acp_client_capabilities: 0
 end

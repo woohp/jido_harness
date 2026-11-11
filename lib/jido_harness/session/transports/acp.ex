@@ -323,10 +323,7 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
         "title" => "Jido Harness",
         "version" => Jido.Harness.version()
       },
-      capabilities: %{
-        "fs" => %{"readTextFile" => false, "writeTextFile" => false},
-        "terminal" => false
-      },
+      capabilities: client_capabilities(state.context.adapter),
       event_listener: self(),
       max_update_queue: @max_pending_update_markers,
       max_update_queue_bytes: @max_update_queue_bytes,
@@ -354,6 +351,17 @@ defmodule Jido.Harness.SessionAdapters.ACPTransport do
           send(owner, {:acp_client_failed, self(), reason})
       end
     end)
+  end
+
+  defp client_capabilities(adapter) do
+    defaults = %{
+      "fs" => %{"readTextFile" => false, "writeTextFile" => false},
+      "terminal" => false
+    }
+
+    if function_exported?(adapter, :acp_client_capabilities, 0),
+      do: Map.merge(defaults, adapter.acp_client_capabilities()),
+      else: defaults
   end
 
   defp fail_startup(state, reason) do
